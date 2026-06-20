@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Gastos Semanal</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        input,
+        button,
+        select {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        button {
+            cursor: pointer;
+            background: #2563eb;
+            color: white;
+            border: none;
+        }
+
+        button:hover {
+            opacity: .9;
+        }
+
+        .fixed-expense {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .fixed-expense span {
+            flex: 1;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+        }
+
+        .summary-box {
+            background: #eef2ff;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .delete-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            width: 36px;
+            height: 36px;
+
+            padding: 0;
+        }
+
+        .delete-btn:hover {
+            background: #b91c1c;
+        }
+
+        .delete-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        .weeks {
+            width: 100%;
+        }
+
+        .week h3 {
+            margin-bottom: 10px;
+        }
+
+        .week-balance {
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .expense-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .expense-item>span:first-child {
+            flex: 1;
+            word-break: break-word;
+        }
+
+        .expense-form {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .expense-form input {
+            min-width: 0;
+        }
+
+        .expense-form input[type="text"] {
+            flex: 2;
+        }
+
+        .expense-form input[type="number"] {
+            flex: 1;
+        }
+
+        .expense-form button {
+            flex: 0 0 auto;
+        }
+
+        /* .week {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+            
+        }
+
+       
+
+       
+
+        
+
+        .expense-form {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .expense-form input {
+            flex: 1;
+        } */
+
+        .green {
+            color: green;
+        }
+
+        .red {
+            color: #d00000;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>Planificador de gastos</h1>
+
+        <div class="card">
+
+            <div class="row">
+                <input type="number" id="salary" placeholder="Salario mensual (€)">
+
+                <input type="number" id="weeksCount" min="1" value="4" placeholder="Número de semanas">
+            </div>
+
+            <hr style="margin:20px 0;">
+
+            <h3>Gastos fijos</h3>
+
+            <div class="row" style="margin-top:10px;">
+                <input type="text" id="fixedName" placeholder="Concepto">
+                <input type="number" id="fixedAmount" placeholder="Importe">
+                <button onclick="addFixedExpense()">Añadir</button>
+            </div>
+
+            <div id="fixedExpensesList"></div>
+
+        </div>
+
+        <div class="summary card">
+            <div class="summary-box">
+                <strong>Salario</strong>
+                <div id="salaryDisplay">0 €</div>
+            </div>
+
+            <div class="summary-box">
+                <strong>Gastos fijos</strong>
+                <div id="fixedDisplay">0 €</div>
+            </div>
+
+            <div class="summary-box">
+                <strong>Disponible</strong>
+                <div id="availableDisplay">0 €</div>
+            </div>
+
+            <div class="summary-box">
+                <strong>Por semana</strong>
+                <div id="weeklyDisplay">0 €</div>
+            </div>
+        </div>
+
+        <div id="weeksContainer" class="card weeks"></div>
+
+        <div class="card">
+            <div class="row">
+                <button onclick="previousWeek()">← Semana anterior</button>
+
+                <div id="currentWeekLabel" style="
+                flex:1;
+                text-align:center;
+                font-weight:bold;
+                align-self:center;
+            ">
+                </div>
+
+                <button onclick="nextWeek()">Semana siguiente →</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+
+        let fixedExpenses = [];
+        let weeklyExpenses = [];
+        let currentWeek = 0;
+
+        function addFixedExpense() {
+
+            const name = document.getElementById("fixedName").value.trim();
+            const amount = parseFloat(document.getElementById("fixedAmount").value);
+
+            if (!name || isNaN(amount) || amount <= 0) {
+                alert("Introduce un concepto y un importe válido");
+                return;
+            }
+
+            fixedExpenses.push({
+                name,
+                amount
+            });
+
+            document.getElementById("fixedName").value = "";
+            document.getElementById("fixedAmount").value = "";
+
+            renderFixedExpenses();
+            updateSummary();
+            generateWeeks();
+            saveData();
+        }
+
+        function renderFixedExpenses() {
+
+            const container = document.getElementById("fixedExpensesList");
+
+            container.innerHTML = "";
+
+            fixedExpenses.forEach((expense, index) => {
+
+                const div = document.createElement("div");
+                div.className = "fixed-expense";
+
+                div.innerHTML = `
+            <span>${expense.name}</span>
+            <span>${expense.amount.toFixed(2)} €</span>
+            <button
+                class="delete-btn"
+                onclick="removeFixedExpense(${index})"
+                title="Eliminar">
+
+                <svg viewBox="0 0 24 24">
+                    <path d="M9 3h6l1 2h5v2H3V5h5l1-2zm1 6h2v8h-2V9zm4 0h2v8h-2V9zM7 9h2v8H7V9zm-1 12h12a2 2 0 0 0 2-2V7H4v12a2 2 0 0 0 2 2z"/>
+                </svg>
+
+            </button>
+            `;
+
+                container.appendChild(div);
+            });
+        }
+
+        function removeFixedExpense(index) {
+            fixedExpenses.splice(index, 1);
+            renderFixedExpenses();
+            updateSummary();
+            generateWeeks();
+            saveData();
+        }
+
+        function removeExpense(weekIndex, expenseIndex) {
+
+            weeklyExpenses[weekIndex].splice(
+                expenseIndex,
+                1
+            );
+
+            renderWeek(
+                weekIndex,
+                getWeeklyBudget()
+            );
+
+            saveData();
+        }
+
+        function updateSummary() {
+
+            const salary =
+                parseFloat(document.getElementById("salary").value) || 0;
+
+            const totalFixed =
+                fixedExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+            const available =
+                salary - totalFixed;
+
+            const weeks =
+                Math.max(
+                    1,
+                    parseInt(document.getElementById("weeksCount").value) || 1
+                );
+
+            const weekly =
+                available / weeks;
+
+            document.getElementById("salaryDisplay")
+                .textContent = salary.toFixed(2) + " €";
+
+            document.getElementById("fixedDisplay")
+                .textContent = totalFixed.toFixed(2) + " €";
+
+            document.getElementById("availableDisplay")
+                .textContent = available.toFixed(2) + " €";
+
+            document.getElementById("weeklyDisplay")
+                .textContent = weekly.toFixed(2) + " €";
+        }
+
+        function saveData() {
+
+            const data = {
+                salary: document.getElementById("salary").value,
+                weeksCount: document.getElementById("weeksCount").value,
+                fixedExpenses,
+                weeklyExpenses,
+                currentWeek
+            };
+
+            localStorage.setItem(
+                "budgetApp",
+                JSON.stringify(data)
+            );
+        }
+
+        function loadData() {
+
+            const data =
+                JSON.parse(
+                    localStorage.getItem("budgetApp")
+                );
+
+            if (!data) return;
+
+            document.getElementById("salary").value =
+                data.salary || "";
+
+            document.getElementById("weeksCount").value =
+                data.weeksCount || 4;
+
+            fixedExpenses =
+                data.fixedExpenses || [];
+
+            weeklyExpenses =
+                data.weeklyExpenses || [];
+
+            currentWeek =
+                data.currentWeek || 0;
+
+            renderFixedExpenses();
+        }
+
+        function generateWeeks() {
+
+            updateSummary();
+
+            const salary =
+                parseFloat(document.getElementById("salary").value) || 0;
+
+            const totalFixed =
+                fixedExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+            const available =
+                salary - totalFixed;
+
+            const weeks =
+                Math.max(
+                    1,
+                    parseInt(document.getElementById("weeksCount").value) || 1
+                );
+
+            const weeklyBudget =
+                available / weeks;
+
+            if (weeklyExpenses.length !== weeks) {
+
+                const newArray =
+                    Array.from({ length: weeks }, (_, i) =>
+                        weeklyExpenses[i] || []
+                    );
+
+                weeklyExpenses = newArray;
+
+                if (currentWeek >= weeks) {
+                    currentWeek = weeks - 1;
+                }
+            }
+
+            renderCurrentWeek(weeklyBudget);
+        }
+
+        function addExpense(weekIndex) {
+
+            const name =
+                document.getElementById(`expense-name-${weekIndex}`).value.trim();
+
+            const amount =
+                parseFloat(
+                    document.getElementById(`expense-amount-${weekIndex}`).value
+                );
+
+            if (!name || isNaN(amount) || amount <= 0) {
+                return;
+            }
+
+            weeklyExpenses[weekIndex].push({
+                name,
+                amount
+            });
+
+            document.getElementById(`expense-name-${weekIndex}`).value = "";
+            document.getElementById(`expense-amount-${weekIndex}`).value = "";
+
+            const weeklyBudget = getWeeklyBudget();
+
+            renderWeek(weekIndex, weeklyBudget);
+
+            saveData();
+        }
+
+        function renderCurrentWeek(weeklyBudget) {
+
+            const container =
+                document.getElementById("weeksContainer");
+
+            container.innerHTML = "";
+
+            document.getElementById("currentWeekLabel").textContent =
+                `Semana ${currentWeek + 1} de ${weeklyExpenses.length}`;
+
+            const weekDiv = document.createElement("div");
+
+            weekDiv.className = "week";
+
+            weekDiv.innerHTML = `
+        <h2>Semana ${currentWeek + 1}</h2>
+
+        <div
+            id="balance-${currentWeek}"
+            class="week-balance">
+            Saldo: ${weeklyBudget.toFixed(2)} €
+        </div>
+
+        <div id="expenses-${currentWeek}"></div>
+
+        <div class="expense-form">
+            <input
+                type="text"
+                id="expense-name-${currentWeek}"
+                placeholder="Concepto">
+
+            <input
+                type="number"
+                id="expense-amount-${currentWeek}"
+                placeholder="Importe">
+
+            <button onclick="addExpense(${currentWeek})">
+                Añadir
+            </button>
+        </div>
+    `;
+
+            container.appendChild(weekDiv);
+
+            renderWeek(currentWeek, weeklyBudget);
+        }
+
+        function previousWeek() {
+
+            if (currentWeek > 0) {
+
+                currentWeek--;
+
+                renderCurrentWeek(
+                    getWeeklyBudget()
+                );
+
+                saveData();
+            }
+        }
+
+        function nextWeek() {
+
+            if (currentWeek < weeklyExpenses.length - 1) {
+
+                currentWeek++;
+
+                renderCurrentWeek(
+                    getWeeklyBudget()
+                );
+
+                saveData();
+            }
+        }
+
+        function getWeeklyBudget() {
+
+            const salary =
+                parseFloat(document.getElementById("salary").value) || 0;
+
+            const totalFixed =
+                fixedExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+            const available =
+                salary - totalFixed;
+
+            const weeks =
+                parseInt(document.getElementById("weeksCount").value);
+
+            return available / weeks;
+        }
+
+        function renderWeek(index, budget) {
+
+            const list =
+                document.getElementById(`expenses-${index}`);
+
+            list.innerHTML = "";
+
+            let spent = 0;
+
+            weeklyExpenses[index].forEach((expense, expenseIndex) => {
+
+                spent += expense.amount;
+
+                const div = document.createElement("div");
+
+                div.className = "expense-item";
+
+                div.innerHTML = `
+                    <span>${expense.name}</span>
+
+                    <div style="
+                        display:flex;
+                        align-items:center;
+                        gap:10px;
+                    ">
+                        <span>${expense.amount.toFixed(2)} €</span>
+
+                        <button
+                            class="delete-btn"
+                            onclick="removeExpense(${index}, ${expenseIndex})"
+                            title="Eliminar">
+
+                            <svg viewBox="0 0 24 24">
+                                <path d="M9 3h6l1 2h5v2H3V5h5l1-2zm1 6h2v8h-2V9zm4 0h2v8h-2V9zM7 9h2v8H7V9zm-1 12h12a2 2 0 0 0 2-2V7H4v12a2 2 0 0 0 2 2z"/>
+                            </svg>
+
+                        </button>
+                    </div>
+                `;
+
+                list.appendChild(div);
+            });
+
+            const remaining = budget - spent;
+
+            const balance =
+                document.getElementById(`balance-${index}`);
+
+            balance.innerHTML =
+                `Saldo: ${remaining.toFixed(2)} €`;
+
+            balance.className =
+                "week-balance " +
+                (remaining >= 0 ? "green" : "red");
+        }
+
+        document.getElementById("salary")
+            .addEventListener("input", () => {
+                updateSummary();
+                generateWeeks();
+                saveData();
+            });
+
+        document.getElementById("weeksCount")
+            .addEventListener("change", () => {
+                generateWeeks();
+                saveData();
+            });
+
+        loadData();
+        generateWeeks();
+
+    </script>
+
+</body>
+
+</html>
