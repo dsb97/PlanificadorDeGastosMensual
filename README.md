@@ -34,24 +34,6 @@ Todos los datos se guardan automáticamente en el navegador, por lo que no se pe
 * JavaScript (Vanilla JS)
 * LocalStorage API
 
-## 📂 Estructura del proyecto
-
-```text
-/
-├── index.html
-├── README.md
-```
-
-## 🔮 Posibles mejoras futuras
-
-* Historial de meses anteriores.
-* Exportación e importación de datos.
-* Gráficas de gastos.
-* Categorías de gastos.
-* Modo oscuro.
-* Conversión a Progressive Web App (PWA).
-* Sincronización en la nube.
-
 ## 📄 Licencia
 
 Este proyecto se distribuye bajo la licencia MIT. Puedes utilizarlo, modificarlo y distribuirlo libremente.
