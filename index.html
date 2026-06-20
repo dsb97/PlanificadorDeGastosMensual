@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
     <title>Control de Gastos Semanal</title>
+    <link rel="manifest" href="manifest.json">
 
     <style>
         * {
@@ -651,6 +653,16 @@
 
         loadData();
         generateWeeks();
+
+        if ("serviceWorker" in navigator) {
+
+            navigator.serviceWorker
+                .register("./sw.js")
+                .then(() => {
+                    console.log("Service Worker registrado");
+                });
+
+        }
 
     </script>
 
